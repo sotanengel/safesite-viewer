@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "schedule": ["every weekend"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "matchUpdateTypes": ["minor", "major"],
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": true
+  }
+}

@@ -1,0 +1,6 @@
+npx lint-staged
+npx tsc --noEmit
+# gitleaks がインストール済みの場合のみ実行
+if command -v gitleaks &> /dev/null; then
+  gitleaks protect --staged --verbose
+fi
