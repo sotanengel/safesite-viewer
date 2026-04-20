@@ -15,9 +15,12 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "maplibre-gl": "^5.23.0",
     "next": "16.2.4",
+    "nuqs": "^2.8.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@commitlint/cli": "^19",
@@ -25,6 +28,7 @@
     "@commitlint/types": "^19",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16",
+    "@types/maplibre-gl": "^1.13.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
