@@ -14,12 +14,15 @@ const DEFAULT_ZOOM = 10
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const searchMarkerRef = useRef<maplibregl.Marker | null>(null)
 
   const [lat, setLat] = useQueryState('lat', parseAsFloat.withDefault(DEFAULT_LAT))
   const [lng, setLng] = useQueryState('lng', parseAsFloat.withDefault(DEFAULT_LNG))
   const [zoom, setZoom] = useQueryState('zoom', parseAsFloat.withDefault(DEFAULT_ZOOM))
 
   const basemap = useMapStore((s) => s.basemap)
+  const flyToTrigger = useMapStore((s) => s.flyToTrigger)
+  const flyToLocation = useMapStore((s) => s.flyToLocation)
 
   // Map initialization
   useEffect(() => {
@@ -94,6 +97,50 @@ export default function MapView() {
       source.setTiles([bm.tileUrl])
     }
   }, [basemap])
+
+  // Fly to location (triggered by search)
+  const prevFlyTriggerRef = useRef(flyToTrigger)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !flyToLocation) return
+    if (prevFlyTriggerRef.current === flyToTrigger) return
+    prevFlyTriggerRef.current = flyToTrigger
+
+    // Remove old search marker
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.remove()
+    }
+
+    // Fly to location
+    map.flyTo({
+      center: [flyToLocation.lng, flyToLocation.lat],
+      zoom: 15,
+      speed: 1.5,
+    })
+
+    // Add search marker
+    const el = document.createElement('div')
+    el.className = 'search-marker'
+    el.style.cssText = `
+      width: 28px; height: 28px;
+      background: #2563eb;
+      border: 3px solid white;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    `
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([flyToLocation.lng, flyToLocation.lat])
+      .setPopup(
+        new maplibregl.Popup({ offset: 25, closeButton: false }).setHTML(
+          `<div class="text-sm font-medium text-gray-800 max-w-[200px]">${flyToLocation.address ?? '選択地点'}</div>`,
+        ),
+      )
+      .addTo(map)
+
+    marker.togglePopup()
+    searchMarkerRef.current = marker
+  }, [flyToTrigger, flyToLocation])
 
   return (
     <div className="relative w-full h-full">
