@@ -1,16 +1,27 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import SearchBar from '@/components/SearchBar/SearchBar'
+import { useMapStore } from '@/lib/store/map-store'
+import type { GeocodeResult } from '@/lib/api/geocode'
 
 const MapView = dynamic(() => import('@/components/Map/MapView'), { ssr: false })
 
 export default function Home() {
+  const triggerFlyTo = useMapStore((s) => s.triggerFlyTo)
+
+  const handleSearchSelect = (result: GeocodeResult) => {
+    triggerFlyTo({ lat: result.lat, lng: result.lng, address: result.address })
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center h-12 px-4 bg-white border-b border-gray-200 shadow-sm shrink-0 z-20">
-        <h1 className="text-base font-semibold text-gray-800">SafeSite Viewer</h1>
-        <span className="ml-2 text-xs text-gray-400">立地安全性確認</span>
+      <header className="flex items-center h-14 px-4 bg-white border-b border-gray-200 shadow-sm shrink-0 z-20 gap-4">
+        <h1 className="text-sm font-bold text-gray-800 whitespace-nowrap">SafeSite Viewer</h1>
+        <div className="flex-1 flex justify-center">
+          <SearchBar onSelect={handleSearchSelect} />
+        </div>
       </header>
 
       {/* Main: sidebar + map */}
