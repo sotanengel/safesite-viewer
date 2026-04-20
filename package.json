@@ -29,7 +29,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "16.2.4",
     "husky": "^9",
     "jsdom": "^26",
