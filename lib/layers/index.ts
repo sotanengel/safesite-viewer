@@ -208,3 +208,16 @@ export function getLayersByCategory(category: LayerCategory): LayerDef[] {
 export function getRasterLayers(): LayerDef[] {
   return LAYERS.filter((l) => l.dataType === 'raster-tile' && l.tileUrl)
 }
+
+/**
+ * Returns the effective XYZ tile URL for a raster layer.
+ * When NEXT_PUBLIC_USE_LOCAL_TILES=true, routes through the local API which
+ * serves tiles from tiles.db (SQLite). Missing tiles are transparently
+ * redirected to the original upstream server (internet required for those).
+ */
+export function getEffectiveTileUrl(layer: LayerDef): string | undefined {
+  if (process.env.NEXT_PUBLIC_USE_LOCAL_TILES === 'true' && layer.tileUrl) {
+    return `/api/tiles/${layer.id}/{z}/{x}/{y}`
+  }
+  return layer.tileUrl
+}
