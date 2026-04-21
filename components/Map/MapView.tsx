@@ -89,6 +89,27 @@ export default function MapView() {
       setZoom(parseFloat(z.toFixed(2)))
     })
 
+    // Apply initial visible layers once style is ready
+    map.on('load', () => {
+      const { layerStates: initialStates } = useMapStore.getState()
+      getRasterLayers().forEach((l) => {
+        const state = initialStates[l.id]
+        if (!state?.visible) return
+        map.addSource(l.id, {
+          type: 'raster',
+          tiles: [l.tileUrl!],
+          tileSize: 256,
+          attribution: l.attribution,
+        })
+        map.addLayer({
+          id: `${l.id}-layer`,
+          type: 'raster',
+          source: l.id,
+          paint: { 'raster-opacity': state.opacity },
+        })
+      })
+    })
+
     mapRef.current = map
     setMapInstance(map)
 
