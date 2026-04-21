@@ -5,7 +5,7 @@ import maplibregl from 'maplibre-gl'
 import { useQueryState, parseAsFloat } from 'nuqs'
 import { useMapStore } from '@/lib/store/map-store'
 import { getBasemap } from '@/lib/basemaps'
-import { getRasterLayers } from '@/lib/layers'
+import { getRasterLayers, getEffectiveTileUrl } from '@/lib/layers'
 import BasemapSwitcher from './BasemapSwitcher'
 
 const DEFAULT_LAT = 35.681236
@@ -95,9 +95,10 @@ export default function MapView() {
       getRasterLayers().forEach((l) => {
         const state = initialStates[l.id]
         if (!state?.visible) return
+        const resolvedUrl = getEffectiveTileUrl(l)!
         map.addSource(l.id, {
           type: 'raster',
-          tiles: [l.tileUrl!],
+          tiles: [resolvedUrl],
           tileSize: 256,
           attribution: l.attribution,
         })
@@ -153,9 +154,10 @@ export default function MapView() {
       if (state.visible) {
         // Add source if not present
         if (!map.getSource(sourceId)) {
+          const resolvedUrl = getEffectiveTileUrl(l)!
           map.addSource(sourceId, {
             type: 'raster',
-            tiles: [l.tileUrl!],
+            tiles: [resolvedUrl],
             tileSize: 256,
             attribution: l.attribution,
           })
