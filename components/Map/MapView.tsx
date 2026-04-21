@@ -26,6 +26,7 @@ export default function MapView() {
   const flyToLocation = useMapStore((s) => s.flyToLocation)
   const layerStates = useMapStore((s) => s.layerStates)
   const setSelectedLocation = useMapStore((s) => s.setSelectedLocation)
+  const setMapInstance = useMapStore((s) => s.setMapInstance)
 
   // Map initialization
   useEffect(() => {
@@ -99,10 +100,12 @@ export default function MapView() {
     })
 
     mapRef.current = map
+    setMapInstance(map)
 
     return () => {
       map.remove()
       mapRef.current = null
+      setMapInstance(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

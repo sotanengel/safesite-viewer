@@ -1,6 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
+import type maplibregl from 'maplibre-gl'
 import type { BasemapId } from '@/lib/basemaps'
 import { DEFAULT_BASEMAP_ID } from '@/lib/basemaps'
 import { getRasterLayers } from '@/lib/layers'
@@ -33,9 +34,14 @@ interface MapState {
   layerStates: Record<string, LayerState>
   setLayerVisible: (layerId: string, visible: boolean) => void
   setLayerOpacity: (layerId: string, opacity: number) => void
+  /** Reference to the MapLibre map instance, set by MapView on mount */
+  mapInstance: maplibregl.Map | null
+  setMapInstance: (map: maplibregl.Map | null) => void
+  /** Export current map view as PNG data URL */
+  exportMapPng: () => Promise<string | null>
 }
 
-export const useMapStore = create<MapState>()((set) => ({
+export const useMapStore = create<MapState>()((set, get) => ({
   basemap: DEFAULT_BASEMAP_ID,
   setBasemap: (basemap) => set({ basemap }),
   selectedLocation: null,
@@ -59,4 +65,17 @@ export const useMapStore = create<MapState>()((set) => ({
         [layerId]: { ...s.layerStates[layerId], opacity },
       },
     })),
+  mapInstance: null,
+  setMapInstance: (map) => set({ mapInstance: map }),
+  exportMapPng: () => {
+    const map = get().mapInstance
+    if (!map) return Promise.resolve(null)
+    return new Promise((resolve) => {
+      map.once('render', () => {
+        const canvas = map.getCanvas()
+        resolve(canvas.toDataURL('image/png'))
+      })
+      map.triggerRepaint()
+    })
+  },
 }))
