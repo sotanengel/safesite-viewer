@@ -2,6 +2,8 @@
 
 import dynamic from 'next/dynamic'
 import SearchBar from '@/components/SearchBar/SearchBar'
+import LayerPanel from '@/components/LayerPanel/LayerPanel'
+import LegendBar from '@/components/Legend/LegendBar'
 import { useMapStore } from '@/lib/store/map-store'
 import type { GeocodeResult } from '@/lib/api/geocode'
 
@@ -24,19 +26,17 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main: sidebar + map */}
+      {/* Main: sidebar + map + summary */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel (layer control placeholder) */}
-        <aside className="hidden md:flex w-56 flex-col bg-white border-r border-gray-200 p-3 overflow-y-auto shrink-0">
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">
-            レイヤー
-          </p>
-          <p className="text-xs text-gray-300 italic">Coming soon (PR #4)</p>
+        {/* Left panel: layer control */}
+        <aside className="hidden md:flex w-56 flex-col bg-white border-r border-gray-200 overflow-hidden shrink-0">
+          <LayerPanel />
         </aside>
 
         {/* Map */}
         <main className="flex-1 relative">
           <MapView />
+          <LegendBar />
         </main>
 
         {/* Right panel (summary placeholder) */}
