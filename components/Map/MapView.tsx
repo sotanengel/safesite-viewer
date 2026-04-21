@@ -5,6 +5,7 @@ import maplibregl from 'maplibre-gl'
 import { useQueryState, parseAsFloat } from 'nuqs'
 import { useMapStore } from '@/lib/store/map-store'
 import { getBasemap } from '@/lib/basemaps'
+import { getRasterLayers } from '@/lib/layers'
 import BasemapSwitcher from './BasemapSwitcher'
 
 const DEFAULT_LAT = 35.681236
@@ -23,12 +24,14 @@ export default function MapView() {
   const basemap = useMapStore((s) => s.basemap)
   const flyToTrigger = useMapStore((s) => s.flyToTrigger)
   const flyToLocation = useMapStore((s) => s.flyToLocation)
+  const layerStates = useMapStore((s) => s.layerStates)
 
   // Map initialization
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
     const bm = getBasemap(basemap)
+    const rasterLayers = getRasterLayers()
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
@@ -43,13 +46,28 @@ export default function MapView() {
             maxzoom: bm.maxzoom,
             attribution: bm.attribution,
           },
+          ...Object.fromEntries(
+            rasterLayers.map((l) => [
+              l.id,
+              {
+                type: 'raster' as const,
+                tiles: [l.tileUrl!],
+                tileSize: 256,
+                attribution: l.attribution,
+              },
+            ]),
+          ),
         },
         layers: [
-          {
-            id: 'basemap-layer',
-            type: 'raster',
-            source: 'basemap',
-          },
+          { id: 'basemap-layer', type: 'raster', source: 'basemap' },
+          ...rasterLayers.map((l) => ({
+            id: `${l.id}-layer`,
+            type: 'raster' as const,
+            source: l.id,
+            paint: {
+              'raster-opacity': l.defaultVisible ? l.defaultOpacity : 0,
+            },
+          })),
         ],
       },
       center: [lng, lat],
@@ -98,6 +116,21 @@ export default function MapView() {
     }
   }, [basemap])
 
+  // Layer visibility / opacity sync
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+
+    getRasterLayers().forEach((l) => {
+      const state = layerStates[l.id]
+      if (!state) return
+      const layerId = `${l.id}-layer`
+      if (!map.getLayer(layerId)) return
+
+      map.setPaintProperty(layerId, 'raster-opacity', state.visible ? state.opacity : 0)
+    })
+  }, [layerStates])
+
   // Fly to location (triggered by search)
   const prevFlyTriggerRef = useRef(flyToTrigger)
   useEffect(() => {
@@ -106,21 +139,13 @@ export default function MapView() {
     if (prevFlyTriggerRef.current === flyToTrigger) return
     prevFlyTriggerRef.current = flyToTrigger
 
-    // Remove old search marker
     if (searchMarkerRef.current) {
       searchMarkerRef.current.remove()
     }
 
-    // Fly to location
-    map.flyTo({
-      center: [flyToLocation.lng, flyToLocation.lat],
-      zoom: 15,
-      speed: 1.5,
-    })
+    map.flyTo({ center: [flyToLocation.lng, flyToLocation.lat], zoom: 15, speed: 1.5 })
 
-    // Add search marker
     const el = document.createElement('div')
-    el.className = 'search-marker'
     el.style.cssText = `
       width: 28px; height: 28px;
       background: #2563eb;
