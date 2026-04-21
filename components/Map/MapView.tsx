@@ -17,9 +17,18 @@ export default function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null)
   const searchMarkerRef = useRef<maplibregl.Marker | null>(null)
 
-  const [lat, setLat] = useQueryState('lat', parseAsFloat.withDefault(DEFAULT_LAT))
-  const [lng, setLng] = useQueryState('lng', parseAsFloat.withDefault(DEFAULT_LNG))
-  const [zoom, setZoom] = useQueryState('zoom', parseAsFloat.withDefault(DEFAULT_ZOOM))
+  const [lat, setLat] = useQueryState(
+    'lat',
+    parseAsFloat.withDefault(DEFAULT_LAT),
+  )
+  const [lng, setLng] = useQueryState(
+    'lng',
+    parseAsFloat.withDefault(DEFAULT_LNG),
+  )
+  const [zoom, setZoom] = useQueryState(
+    'zoom',
+    parseAsFloat.withDefault(DEFAULT_ZOOM),
+  )
 
   const basemap = useMapStore((s) => s.basemap)
   const flyToTrigger = useMapStore((s) => s.flyToTrigger)
@@ -28,12 +37,11 @@ export default function MapView() {
   const setSelectedLocation = useMapStore((s) => s.setSelectedLocation)
   const setMapInstance = useMapStore((s) => s.setMapInstance)
 
-  // Map initialization
+  // Map initialization — only basemap source/layer in initial style
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
     const bm = getBasemap(basemap)
-    const rasterLayers = getRasterLayers()
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
@@ -48,29 +56,8 @@ export default function MapView() {
             maxzoom: bm.maxzoom,
             attribution: bm.attribution,
           },
-          ...Object.fromEntries(
-            rasterLayers.map((l) => [
-              l.id,
-              {
-                type: 'raster' as const,
-                tiles: [l.tileUrl!],
-                tileSize: 256,
-                attribution: l.attribution,
-              },
-            ]),
-          ),
         },
-        layers: [
-          { id: 'basemap-layer', type: 'raster', source: 'basemap' },
-          ...rasterLayers.map((l) => ({
-            id: `${l.id}-layer`,
-            type: 'raster' as const,
-            source: l.id,
-            paint: {
-              'raster-opacity': l.defaultVisible ? l.defaultOpacity : 0,
-            },
-          })),
-        ],
+        layers: [{ id: 'basemap-layer', type: 'raster', source: 'basemap' }],
       },
       center: [lng, lat],
       zoom,
@@ -84,7 +71,10 @@ export default function MapView() {
       }),
       'top-right',
     )
-    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+    map.addControl(
+      new maplibregl.ScaleControl({ unit: 'metric' }),
+      'bottom-left',
+    )
 
     map.on('click', (e) => {
       const { lat: clickLat, lng: clickLng } = e.lngLat
@@ -119,13 +109,15 @@ export default function MapView() {
     prevBasemapRef.current = basemap
 
     const bm = getBasemap(basemap)
-    const source = map.getSource('basemap') as maplibregl.RasterTileSource | undefined
+    const source = map.getSource('basemap') as
+      | maplibregl.RasterTileSource
+      | undefined
     if (source) {
       source.setTiles([bm.tileUrl])
     }
   }, [basemap])
 
-  // Layer visibility / opacity sync
+  // Lazy layer loading — add source+layer when visible, remove when hidden
   useEffect(() => {
     const map = mapRef.current
     if (!map || !map.isStyleLoaded()) return
@@ -133,10 +125,41 @@ export default function MapView() {
     getRasterLayers().forEach((l) => {
       const state = layerStates[l.id]
       if (!state) return
-      const layerId = `${l.id}-layer`
-      if (!map.getLayer(layerId)) return
 
-      map.setPaintProperty(layerId, 'raster-opacity', state.visible ? state.opacity : 0)
+      const sourceId = l.id
+      const layerId = `${l.id}-layer`
+
+      if (state.visible) {
+        // Add source if not present
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: 'raster',
+            tiles: [l.tileUrl!],
+            tileSize: 256,
+            attribution: l.attribution,
+          })
+        }
+        // Add layer if not present
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            type: 'raster',
+            source: sourceId,
+            paint: { 'raster-opacity': state.opacity },
+          })
+        } else {
+          // Layer exists — update opacity
+          map.setPaintProperty(layerId, 'raster-opacity', state.opacity)
+        }
+      } else {
+        // Remove layer then source when hidden
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId)
+        }
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId)
+        }
+      }
     })
   }, [layerStates])
 
@@ -152,7 +175,11 @@ export default function MapView() {
       searchMarkerRef.current.remove()
     }
 
-    map.flyTo({ center: [flyToLocation.lng, flyToLocation.lat], zoom: 15, speed: 1.5 })
+    map.flyTo({
+      center: [flyToLocation.lng, flyToLocation.lat],
+      zoom: 15,
+      speed: 1.5,
+    })
 
     const el = document.createElement('div')
     el.style.cssText = `
