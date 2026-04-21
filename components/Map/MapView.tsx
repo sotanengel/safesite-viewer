@@ -25,6 +25,7 @@ export default function MapView() {
   const flyToTrigger = useMapStore((s) => s.flyToTrigger)
   const flyToLocation = useMapStore((s) => s.flyToLocation)
   const layerStates = useMapStore((s) => s.layerStates)
+  const setSelectedLocation = useMapStore((s) => s.setSelectedLocation)
 
   // Map initialization
   useEffect(() => {
@@ -83,6 +84,11 @@ export default function MapView() {
       'top-right',
     )
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+
+    map.on('click', (e) => {
+      const { lat: clickLat, lng: clickLng } = e.lngLat
+      setSelectedLocation({ lat: clickLat, lng: clickLng })
+    })
 
     map.on('moveend', () => {
       const center = map.getCenter()

@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import SearchBar from '@/components/SearchBar/SearchBar'
 import LayerPanel from '@/components/LayerPanel/LayerPanel'
 import LegendBar from '@/components/Legend/LegendBar'
+import SummaryPanel from '@/components/SummaryPanel/SummaryPanel'
 import { useMapStore } from '@/lib/store/map-store'
 import type { GeocodeResult } from '@/lib/api/geocode'
 
@@ -39,14 +40,9 @@ export default function Home() {
           <LegendBar />
         </main>
 
-        {/* Right panel (summary placeholder) */}
-        <aside className="hidden lg:flex w-72 flex-col bg-white border-l border-gray-200 p-3 overflow-y-auto shrink-0">
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">
-            サマリ
-          </p>
-          <p className="text-xs text-gray-300 italic">
-            地図をクリックして地点を選択してください (PR #5)
-          </p>
+        {/* Right panel: summary */}
+        <aside className="hidden lg:flex w-72 flex-col bg-white border-l border-gray-200 overflow-hidden shrink-0">
+          <SummaryPanel />
         </aside>
       </div>
     </div>
